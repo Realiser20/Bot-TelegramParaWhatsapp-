@@ -1,0 +1,19 @@
+{
+  "name": "telegram-whatsapp-bot",
+  "version": "1.0.0",
+  "description": "Bot que conecta Telegram ao WhatsApp usando venom-bot",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": ["telegram", "whatsapp", "bot", "venom-bot"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "16.4.5",
+    "express": "4.19.2",
+    "node-telegram-bot-api": "0.66.0",
+    "venom-bot": "5.1.0"
+  }
+}
