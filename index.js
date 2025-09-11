@@ -1,3 +1,4 @@
+// index.js
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
@@ -6,6 +7,7 @@ const fs = require('fs');
 const TelegramBot = require('node-telegram-bot-api');
 const { create } = require('venom-bot');
 
+// ===== ENV =====
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const DESTINO = process.env.WHATSAPP_DESTINO || '555491739682-1532652400@g.us';
 const PORT = process.env.PORT || 3000;
@@ -16,28 +18,34 @@ if (!TELEGRAM_TOKEN) {
   process.exit(1);
 }
 
+// ===== STATE =====
 let whatsAppClient = null;
 let lastQrDataUrl = null;
 
-// Servidor para visualizar o QR
+// ===== HTTP (QR viewer) =====
 const app = express();
 app.get('/', (_req, res) => {
   res.set('Content-Type', 'text/html; charset=utf-8');
   res.end(`
-    <html><head><meta charset="utf-8"><title>QR WhatsApp</title></head>
-    <body style="font-family: system-ui; padding:24px">
-      <h1>QR do WhatsApp</h1>
-      ${lastQrDataUrl ? `<img src="${lastQrDataUrl}" style="max-width:320px;border:1px solid #ddd;padding:8px;border-radius:8px" />`
-                      : `<p>Aguardando QR... recarregue em alguns segundos.</p>`}
-      <hr/><p>Status: ${whatsAppClient ? 'Conectado' : 'Aguardando conexão...'}</p>
-    </body></html>
+    <html>
+      <head><meta charset="utf-8"><title>QR WhatsApp</title></head>
+      <body style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; padding: 24px">
+        <h1>QR do WhatsApp</h1>
+        ${lastQrDataUrl
+          ? `<img src="${lastQrDataUrl}" style="max-width: 320px; image-rendering: pixelated; border:1px solid #ddd; padding:8px; border-radius:8px;" />`
+          : `<p>Aguardando QR... recarregue em alguns segundos.</p>`}
+        <hr/>
+        <p>Status: ${whatsAppClient ? 'Conectado' : 'Aguardando conexão...'}</p>
+      </body>
+    </html>
   `);
 });
-app.listen(PORT, () => console.log(`🌐 QR viewer on :${PORT}`));
+app.listen(PORT, () => console.log(`🌐 HTTP up on :${PORT} (QR viewer)`));
 
-// Bot do Telegram
+// ===== TELEGRAM BOT =====
 const telegramBot = new TelegramBot(TELEGRAM_TOKEN, { polling: true });
 
+// Formatter
 async function formatarNoticia(mensagem) {
   const linhas = (mensagem || '').split('\n').map(s => s.trim()).filter(Boolean);
   const titulo = linhas[0] || '';
@@ -67,6 +75,7 @@ https://t.me/jornaldacidadeonline
 https://www.jornaldacidadeonline.com.br/paginas/aplicativo`;
 }
 
+// Recebe mensagem no Telegram e repassa ao WhatsApp
 telegramBot.on('message', async (msg) => {
   const texto = msg?.text;
   if (!texto) return;
@@ -87,20 +96,23 @@ telegramBot.on('message', async (msg) => {
   }
 });
 
-// Iniciar Venom
+// ===== Iniciar VENOM =====
 const TOKENS_DIR = path.join(process.cwd(), 'tokens');
 if (!fs.existsSync(TOKENS_DIR)) fs.mkdirSync(TOKENS_DIR, { recursive: true });
 
 create(
   {
-    session: 'noticia-bot',
+    session: 'noticia-bot',       // troque o nome se quiser forçar QR novo
     multidevice: true,
     headless: true,
+    logQR: true,                  // loga o QR em ASCII nos logs
+    qrTimeout: 0,                 // NUNCA expira esperando o QR
     browserArgs: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
-      '--disable-gpu'
+      '--disable-gpu',
+      // '--headless=new', // opcional: pode ativar se precisar
     ],
     useChrome: true,
     executablePath: CHROME_PATH,
@@ -109,33 +121,38 @@ create(
     folderNameToken: TOKENS_DIR,
     updatesLog: false
   },
+  // onQR
   (base64Qr, asciiQR, attempts) => {
-    console.log('🔳 QR ASCII:\n', asciiQR);
-    lastQrDataUrl = base64Qr.startsWith('data:image') ? base64Qr : `data:image/png;base64,${base64Qr}`;
-    console.log('ℹ️ Escaneie o QR abrindo a URL pública (rota "/"). Tentativas:', attempts);
+    console.log('🔳 onQR chamado. Tentativas:', attempts);
+    console.log('QR ASCII:\n', asciiQR);
+    lastQrDataUrl = base64Qr.startsWith('data:image')
+      ? base64Qr
+      : `data:image/png;base64,${base64Qr}`;
+    console.log('ℹ️ Abra a URL pública (/) e escaneie o QR pelo WhatsApp → Aparelhos conectados.');
   },
+  // statusFind
   (statusSession, session) => {
     console.log('🔎 Status session:', statusSession, '| Session:', session);
   }
 )
-.then((client) => {
-  console.log('✅ WhatsApp conectado!');
-  whatsAppClient = client;
+  .then((client) => {
+    console.log('✅ WhatsApp conectado!');
+    whatsAppClient = client;
 
-  setTimeout(() => {
-    client.getAllChats()
-      .then((chats) => {
-        console.log('\n🧪 Chats detectados:\n');
-        chats.forEach((chat) => {
-          const tipo = chat.isGroup ? 'Grupo' : 'Contato';
-          const nome = chat.name || 'Sem nome';
-          const id = chat?.id?._serialized || chat?.id || 'sem-id';
-          console.log(`📦 Tipo: ${tipo} | Nome: ${nome} | ID: ${id}`);
-        });
-      })
-      .catch((err) => console.error('❌ Erro ao buscar chats:', err));
-  }, 4000);
-})
-.catch((error) => {
-  console.error('❌ Erro ao iniciar o Venom:', error);
-});
+    setTimeout(() => {
+      client.getAllChats()
+        .then((chats) => {
+          console.log('\n🧪 Chats detectados:\n');
+          chats.forEach((chat) => {
+            const tipo = chat.isGroup ? 'Grupo' : 'Contato';
+            const nome = chat.name || 'Sem nome';
+            const id = chat?.id?._serialized || chat?.id || 'sem-id';
+            console.log(`📦 Tipo: ${tipo} | Nome: ${nome} | ID: ${id}`);
+          });
+        })
+        .catch((err) => console.error('❌ Erro ao buscar chats:', err));
+    }, 4000);
+  })
+  .catch((error) => {
+    console.error('❌ Erro ao iniciar o Venom:', error);
+  });
