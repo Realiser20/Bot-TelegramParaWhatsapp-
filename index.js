@@ -12,6 +12,7 @@ const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const DESTINO = process.env.WHATSAPP_DESTINO || '555491739682-1532652400@g.us';
 const PORT = process.env.PORT || 3000;
 const CHROME_PATH = process.env.CHROME_PATH || '/usr/bin/google-chrome-stable';
+const SESSION_NAME = process.env.SESSION_NAME || 'noticia-bot-2'; // <- sessão via ENV
 
 if (!TELEGRAM_TOKEN) {
   console.error('❌ Falta TELEGRAM_TOKEN. Configure em Variables no Railway.');
@@ -102,17 +103,21 @@ if (!fs.existsSync(TOKENS_DIR)) fs.mkdirSync(TOKENS_DIR, { recursive: true });
 
 create(
   {
-    session: 'noticia-bot',       // troque o nome se quiser forçar QR novo
+    session: SESSION_NAME,       // <- nome da sessão por ENV
     multidevice: true,
     headless: true,
-    logQR: true,                  // loga o QR em ASCII nos logs
-    qrTimeout: 0,                 // NUNCA expira esperando o QR
+    logQR: true,                 // imprime QR ASCII nos logs
+    qrTimeout: 0,                // nunca expira aguardando login/QR
+    waitStartup: true,           // aguarda carregamento inicial
+    disableWelcome: true,
+    // Se precisar, habilite o headless novo do Chrome:
+    // NOTE: mantenha os demais args.
     browserArgs: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
       '--disable-gpu',
-      // '--headless=new', // opcional: pode ativar se precisar
+      // '--headless=new', // descomente se necessário
     ],
     useChrome: true,
     executablePath: CHROME_PATH,
@@ -124,11 +129,15 @@ create(
   // onQR
   (base64Qr, asciiQR, attempts) => {
     console.log('🔳 onQR chamado. Tentativas:', attempts);
-    console.log('QR ASCII:\n', asciiQR);
-    lastQrDataUrl = base64Qr.startsWith('data:image')
-      ? base64Qr
-      : `data:image/png;base64,${base64Qr}`;
-    console.log('ℹ️ Abra a URL pública (/) e escaneie o QR pelo WhatsApp → Aparelhos conectados.');
+    if (asciiQR) console.log('QR ASCII:\n', asciiQR);
+    if (base64Qr) {
+      lastQrDataUrl = base64Qr.startsWith('data:image')
+        ? base64Qr
+        : `data:image/png;base64,${base64Qr}`;
+      console.log('🖼️ QR pronto para scan na rota "/".');
+    } else {
+      console.log('⚠️ onQR sem base64 ainda. Aguardando...');
+    }
   },
   // statusFind
   (statusSession, session) => {
@@ -156,3 +165,6 @@ create(
   .catch((error) => {
     console.error('❌ Erro ao iniciar o Venom:', error);
   });
+
+// Keep-alive simples (só para logs periódicos)
+setInterval(() => console.log('⏱️ heartbeat'), 60_000);
