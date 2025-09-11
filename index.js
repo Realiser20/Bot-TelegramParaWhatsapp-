@@ -12,7 +12,7 @@ const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const DESTINO = process.env.WHATSAPP_DESTINO || '555491739682-1532652400@g.us';
 const PORT = process.env.PORT || 3000;
 const CHROME_PATH = process.env.CHROME_PATH || '/usr/bin/google-chrome-stable';
-const SESSION_NAME = process.env.SESSION_NAME || 'noticia-bot-2'; // <- sessão via ENV
+const SESSION_NAME = process.env.SESSION_NAME || 'noticia-bot-2';
 
 if (!TELEGRAM_TOKEN) {
   console.error('❌ Falta TELEGRAM_TOKEN. Configure em Variables no Railway.');
@@ -101,31 +101,10 @@ telegramBot.on('message', async (msg) => {
 const TOKENS_DIR = path.join(process.cwd(), 'tokens');
 if (!fs.existsSync(TOKENS_DIR)) fs.mkdirSync(TOKENS_DIR, { recursive: true });
 
+// ✅ Assinatura clássica: (sessionName, onQR, statusFind, options)
 create(
-  {
-    session: SESSION_NAME,       // <- nome da sessão por ENV
-    multidevice: true,
-    headless: true,
-    logQR: true,                 // imprime QR ASCII nos logs
-    qrTimeout: 0,                // nunca expira aguardando login/QR
-    waitStartup: true,           // aguarda carregamento inicial
-    disableWelcome: true,
-    // Se precisar, habilite o headless novo do Chrome:
-    // NOTE: mantenha os demais args.
-    browserArgs: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-gpu',
-      // '--headless=new', // descomente se necessário
-    ],
-    useChrome: true,
-    executablePath: CHROME_PATH,
-    disableSpins: true,
-    autoClose: 0,
-    folderNameToken: TOKENS_DIR,
-    updatesLog: false
-  },
+  SESSION_NAME,
+
   // onQR
   (base64Qr, asciiQR, attempts) => {
     console.log('🔳 onQR chamado. Tentativas:', attempts);
@@ -139,9 +118,36 @@ create(
       console.log('⚠️ onQR sem base64 ainda. Aguardando...');
     }
   },
+
   // statusFind
   (statusSession, session) => {
     console.log('🔎 Status session:', statusSession, '| Session:', session);
+  },
+
+  // options
+  {
+    multidevice: true,
+    headless: true,
+    logQR: true,          // imprime QR ASCII nos logs
+    waitForLogin: true,   // espera efetivamente pelo login
+    qrTimeout: 0,         // NÃO expira a espera do QR
+    killProcessOnBrowserClose: false,
+    waitStartup: true,
+    disableWelcome: true,
+    folderNameToken: TOKENS_DIR,
+    useChrome: true,
+    executablePath: CHROME_PATH,
+    disableSpins: true,
+    browserArgs: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--no-first-run',
+      '--no-default-browser-check',
+      '--disable-software-rasterizer',
+      '--headless=new' // força headless novo
+    ]
   }
 )
   .then((client) => {
