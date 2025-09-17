@@ -12,7 +12,7 @@ const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const DESTINO = process.env.WHATSAPP_DESTINO || '555491739682-1532652400@g.us';
 const PORT = process.env.PORT || 3000;
 const CHROME_PATH = process.env.CHROME_PATH || '/usr/bin/google-chrome-stable';
-const SESSION_NAME = process.env.SESSION_NAME || 'noticia-bot-2';
+const SESSION_NAME = process.env.SESSION_NAME || 'noticia-bot-3'; // mude via ENV
 
 if (!TELEGRAM_TOKEN) {
   console.error('❌ Falta TELEGRAM_TOKEN. Configure em Variables no Railway.');
@@ -101,7 +101,7 @@ telegramBot.on('message', async (msg) => {
 const TOKENS_DIR = path.join(process.cwd(), 'tokens');
 if (!fs.existsSync(TOKENS_DIR)) fs.mkdirSync(TOKENS_DIR, { recursive: true });
 
-// ✅ Assinatura clássica: (sessionName, onQR, statusFind, options)
+// Assinatura clássica: (sessionName, onQR, statusFind, options)
 create(
   SESSION_NAME,
 
@@ -113,7 +113,7 @@ create(
       lastQrDataUrl = base64Qr.startsWith('data:image')
         ? base64Qr
         : `data:image/png;base64,${base64Qr}`;
-      console.log('🖼️ QR pronto para scan na rota "/".');
+      console.log('🖼️ QR pronto na rota "/". Escaneie pelo WhatsApp → Aparelhos conectados.');
     } else {
       console.log('⚠️ onQR sem base64 ainda. Aguardando...');
     }
@@ -128,9 +128,9 @@ create(
   {
     multidevice: true,
     headless: true,
-    logQR: true,          // imprime QR ASCII nos logs
-    waitForLogin: true,   // espera efetivamente pelo login
-    qrTimeout: 0,         // NÃO expira a espera do QR
+    logQR: true,
+    waitForLogin: true,     // aguarda efetivamente o login
+    qrTimeout: 0,           // não expira
     killProcessOnBrowserClose: false,
     waitStartup: true,
     disableWelcome: true,
@@ -146,7 +146,8 @@ create(
       '--no-first-run',
       '--no-default-browser-check',
       '--disable-software-rasterizer',
-      '--headless=new' // força headless novo
+      '--window-size=1280,800',
+      '--headless=new' // headless moderno do Chrome
     ]
   }
 )
