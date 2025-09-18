@@ -124,17 +124,19 @@ create(
     console.log('🔎 Status session:', statusSession, '| Session:', session);
   },
 
-  // options
+  // options 
   {
     multidevice: true,
     headless: true,
     logQR: true,
-    waitForLogin: true,     // aguarda efetivamente o login
-    qrTimeout: 0,           // não expira
+    waitForLogin: true,
+    qrTimeout: 0,
     killProcessOnBrowserClose: false,
     waitStartup: true,
     disableWelcome: true,
-    folderNameToken: TOKENS_DIR,
+    // GUARDE ESSA PASTA: nome + caminho absoluto
+    folderNameToken: 'tokens',              // nome da pasta (usado por algumas versões)
+    mkdirFolderToken: '/app/tokens',        // caminho absoluto (garante que escreva no volume)
     useChrome: true,
     executablePath: CHROME_PATH,
     disableSpins: true,
@@ -147,7 +149,7 @@ create(
       '--no-default-browser-check',
       '--disable-software-rasterizer',
       '--window-size=1280,800',
-      '--headless=new' // headless moderno do Chrome
+      '--headless=new'
     ]
   }
 )
