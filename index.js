@@ -41,7 +41,6 @@ app.get('/', (_req, res) => {
     </html>
   `);
 });
-
 app.get('/status', (_req, res) => {
   res.json({
     whatsappConectado: !!whatsAppClient,
@@ -49,7 +48,29 @@ app.get('/status', (_req, res) => {
     qrDisponivel: !!lastQrDataUrl
   });
 });
+const fs = require('fs');
+const path = require('path');
 
+// Endpoint para listar arquivos da sessão do Venom
+app.get('/debug-session', (req, res) => {
+  const sessionPath = path.join('/app/tokens', process.env.SESSION_NAME || 'noticia-bot');
+
+  fs.readdir(sessionPath, (err, files) => {
+    if (err) {
+      return res.status(500).json({
+        sucesso: false,
+        mensagem: 'Erro ao acessar a pasta de sessão',
+        erro: err.message
+      });
+    }
+
+    res.json({
+      sucesso: true,
+      pasta: sessionPath,
+      arquivos: files
+    });
+  });
+});
 app.listen(PORT, () => console.log(`🌐 HTTP up on :${PORT} (QR viewer + status)`));
 
 // ===== TELEGRAM BOT =====
