@@ -22,8 +22,9 @@ if (!TELEGRAM_TOKEN) {
 let whatsAppClient = null;
 let lastQrDataUrl = null;
 
-// ===== HTTP (QR viewer) =====
+// ===== HTTP (QR viewer + status) =====
 const app = express();
+
 app.get('/', (_req, res) => {
   res.set('Content-Type', 'text/html; charset=utf-8');
   res.end(`
@@ -40,12 +41,20 @@ app.get('/', (_req, res) => {
     </html>
   `);
 });
-app.listen(PORT, () => console.log(`🌐 HTTP up on :${PORT} (QR viewer)`));
+
+app.get('/status', (_req, res) => {
+  res.json({
+    whatsappConectado: !!whatsAppClient,
+    telegramAtivo: telegramBot.isPolling(),
+    qrDisponivel: !!lastQrDataUrl
+  });
+});
+
+app.listen(PORT, () => console.log(`🌐 HTTP up on :${PORT} (QR viewer + status)`));
 
 // ===== TELEGRAM BOT =====
 const telegramBot = new TelegramBot(TELEGRAM_TOKEN, { polling: true });
 
-// Formatter
 async function formatarNoticia(mensagem) {
   const linhas = (mensagem || '').split('\n').map(s => s.trim()).filter(Boolean);
   const titulo = linhas[0] || '';
@@ -75,7 +84,6 @@ https://t.me/jornaldacidadeonline
 https://www.jornaldacidadeonline.com.br/paginas/aplicativo`;
 }
 
-// Recebe mensagem no Telegram e repassa ao WhatsApp
 telegramBot.on('message', async (msg) => {
   const texto = msg?.text;
   if (!texto) return;
@@ -126,7 +134,7 @@ create(
     killProcessOnBrowserClose: false,
     waitStartup: true,
     disableWelcome: true,
-    folderNameToken: '/app/tokens', // ✅ Caminho corrigido
+    folderNameToken: '/app/tokens',
     useChrome: true,
     executablePath: CHROME_PATH,
     disableSpins: true,
