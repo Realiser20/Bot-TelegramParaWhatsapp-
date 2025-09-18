@@ -1,4 +1,3 @@
-// index.js
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
@@ -12,7 +11,7 @@ const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const DESTINO = process.env.WHATSAPP_DESTINO || '555491739682-1532652400@g.us';
 const PORT = process.env.PORT || 3000;
 const CHROME_PATH = process.env.CHROME_PATH || '/usr/bin/google-chrome-stable';
-const SESSION_NAME = process.env.SESSION_NAME || 'noticia-bot-3'; // mude via ENV
+const SESSION_NAME = process.env.SESSION_NAME || 'noticia-bot-3';
 
 if (!TELEGRAM_TOKEN) {
   console.error('❌ Falta TELEGRAM_TOKEN. Configure em Variables no Railway.');
@@ -98,14 +97,11 @@ telegramBot.on('message', async (msg) => {
 });
 
 // ===== Iniciar VENOM =====
-const TOKENS_DIR = path.join(process.cwd(), 'tokens');
+const TOKENS_DIR = '/app/tokens';
 if (!fs.existsSync(TOKENS_DIR)) fs.mkdirSync(TOKENS_DIR, { recursive: true });
 
-// Assinatura clássica: (sessionName, onQR, statusFind, options)
 create(
   SESSION_NAME,
-
-  // onQR
   (base64Qr, asciiQR, attempts) => {
     console.log('🔳 onQR chamado. Tentativas:', attempts);
     if (asciiQR) console.log('QR ASCII:\n', asciiQR);
@@ -118,13 +114,9 @@ create(
       console.log('⚠️ onQR sem base64 ainda. Aguardando...');
     }
   },
-
-  // statusFind
   (statusSession, session) => {
     console.log('🔎 Status session:', statusSession, '| Session:', session);
   },
-
-  // options 
   {
     multidevice: true,
     headless: true,
@@ -134,9 +126,7 @@ create(
     killProcessOnBrowserClose: false,
     waitStartup: true,
     disableWelcome: true,
-    // GUARDE ESSA PASTA: nome + caminho absoluto
-    folderNameToken: 'tokens',              // nome da pasta (usado por algumas versões)
-    mkdirFolderToken: '/app/tokens',        // caminho absoluto (garante que escreva no volume)
+    folderNameToken: '/app/tokens', // ✅ Caminho corrigido
     useChrome: true,
     executablePath: CHROME_PATH,
     disableSpins: true,
@@ -175,5 +165,5 @@ create(
     console.error('❌ Erro ao iniciar o Venom:', error);
   });
 
-// Keep-alive simples (só para logs periódicos)
+// Keep-alive simples
 setInterval(() => console.log('⏱️ heartbeat'), 60_000);
