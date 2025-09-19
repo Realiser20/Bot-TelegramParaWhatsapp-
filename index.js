@@ -40,13 +40,8 @@ let whatsAppClient = null;    // instância do Venom
 let telegramBot = null;       // instância do node-telegram-bot-api (opcional)
 
 // ====== Pastas de sessão (persistência do Venom) ======
-const TOKENS_DIR = process.env.TOKENS_DIR || path.join(process.cwd(), 'tokens');
-try {
-  if (!fs.existsSync(TOKENS_DIR)) fs.mkdirSync(TOKENS_DIR, { recursive: true });
-  console.log('[init] TOKENS_DIR:', TOKENS_DIR);
-} catch (e) {
-  console.error('Erro criando TOKENS_DIR', e);
-}
+const TOKENS_DIR = process.env.TOKENS_DIR || '/app/tokens';
+if (!fs.existsSync(TOKENS_DIR)) fs.mkdirSync(TOKENS_DIR, { recursive: true });
 
 // ====== Express ======
 const app = express();
